@@ -1,0 +1,42 @@
+== sorted by cumulative time ==
+         550645 function calls (550613 primitive calls) in 1.364 seconds
+
+   Ordered by: cumulative time
+   List reduced from 230 to 15 due to restriction <15>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      3/2    0.000    0.000    1.364    0.682 interactiveshell.py:3786(run_code)
+      3/2    0.000    0.000    1.364    0.682 {built-in method builtins.exec}
+       10    0.000    0.000    1.364    0.136 618944525.py:3(run_baseline)
+       10    0.000    0.000    1.354    0.135 mosaic_pipeline.py:30(create_mosaic)
+    53850    0.024    0.000    0.648    0.000 {method 'mean' of 'numpy.ndarray' objects}
+       10    0.000    0.000    0.647    0.065 benchmarking.py:24(benchmark_grid_operations)
+    53860    0.138    0.000    0.626    0.000 _methods.py:115(_mean)
+       10    0.000    0.000    0.622    0.062 metrics.py:56(compare_images)
+       10    0.000    0.000    0.609    0.061 metrics.py:39(structural_similarity_index)
+        1    0.000    0.000    0.576    0.576 2935935495.py:1(<module>)
+    40/10    0.177    0.004    0.564    0.056 _structural_similarity.py:15(structural_similarity)
+       30    0.049    0.002    0.515    0.017 grid_analysis.py:63(cell_means_loop)
+      150    0.002    0.000    0.416    0.003 _filters.py:1552(uniform_filter)
+      300    0.002    0.000    0.394    0.001 _filters.py:1501(uniform_filter1d)
+      300    0.390    0.001    0.390    0.001 {built-in method scipy.ndimage._nd_image.uniform_filter1d}
+
+
+
+== sorted by total time ==
+         550645 function calls (550613 primitive calls) in 1.364 seconds
+
+   Ordered by: internal time
+   List reduced from 230 to 8 due to restriction <8>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      300    0.390    0.001    0.390    0.001 {built-in method scipy.ndimage._nd_image.uniform_filter1d}
+    53900    0.382    0.000    0.382    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+    40/10    0.177    0.004    0.564    0.056 _structural_similarity.py:15(structural_similarity)
+    53860    0.138    0.000    0.626    0.000 _methods.py:115(_mean)
+    53860    0.066    0.000    0.086    0.000 _methods.py:73(_count_reduce_items)
+       30    0.049    0.002    0.515    0.017 grid_analysis.py:63(cell_means_loop)
+    53850    0.024    0.000    0.648    0.000 {method 'mean' of 'numpy.ndarray' objects}
+      140    0.017    0.000    0.017    0.000 {method 'astype' of 'numpy.ndarray' objects}
+
+

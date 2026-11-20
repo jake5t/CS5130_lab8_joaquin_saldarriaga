@@ -1,0 +1,650 @@
+{
+  "machine": {
+    "python": "3.13.18",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "scikit-image": "0.26.0",
+    "cpu_count": 2,
+    "platform": "Linux-6.18.44-fc-v726-x86_64-with-glibc2.39"
+  },
+  "settings": {
+    "tile_set": "Diagonal",
+    "baseline_runs": 5,
+    "optimized_runs": 30,
+    "sample": "sample_image_joaquin_1.jpeg"
+  },
+  "baseline": [
+    {
+      "index": 0,
+      "Image size": "256x256",
+      "Grid size": "16x16",
+      "Cell (px)": 16,
+      "Mean (s)": 0.0498479322,
+      "Std (s)": 0.0041270845,
+      "Min (s)": 0.046702504
+    },
+    {
+      "index": 1,
+      "Image size": "256x256",
+      "Grid size": "32x32",
+      "Cell (px)": 8,
+      "Mean (s)": 0.0462592656,
+      "Std (s)": 0.0011815296,
+      "Min (s)": 0.044267206
+    },
+    {
+      "index": 2,
+      "Image size": "256x256",
+      "Grid size": "64x64",
+      "Cell (px)": 4,
+      "Mean (s)": 0.0542090066,
+      "Std (s)": 0.0062285331,
+      "Min (s)": 0.04530868
+    },
+    {
+      "index": 3,
+      "Image size": "512x512",
+      "Grid size": "16x16",
+      "Cell (px)": 32,
+      "Mean (s)": 0.1195587352,
+      "Std (s)": 0.0020057833,
+      "Min (s)": 0.117267652
+    },
+    {
+      "index": 4,
+      "Image size": "512x512",
+      "Grid size": "32x32",
+      "Cell (px)": 16,
+      "Mean (s)": 0.1195589962,
+      "Std (s)": 0.0012302815,
+      "Min (s)": 0.118462003
+    },
+    {
+      "index": 5,
+      "Image size": "512x512",
+      "Grid size": "64x64",
+      "Cell (px)": 8,
+      "Mean (s)": 0.1193312616,
+      "Std (s)": 0.0007752135,
+      "Min (s)": 0.118611569
+    },
+    {
+      "index": 6,
+      "Image size": "1024x1024",
+      "Grid size": "16x16",
+      "Cell (px)": 64,
+      "Mean (s)": 0.501554774,
+      "Std (s)": 0.044460831,
+      "Min (s)": 0.474473609
+    },
+    {
+      "index": 7,
+      "Image size": "1024x1024",
+      "Grid size": "32x32",
+      "Cell (px)": 32,
+      "Mean (s)": 0.4791233446,
+      "Std (s)": 0.0071761272,
+      "Min (s)": 0.472879572
+    },
+    {
+      "index": 8,
+      "Image size": "1024x1024",
+      "Grid size": "64x64",
+      "Cell (px)": 16,
+      "Mean (s)": 0.4950608606,
+      "Std (s)": 0.0279134306,
+      "Min (s)": 0.463819167
+    }
+  ],
+  "stages": [
+    {
+      "index": "prepare_image (crop + LANCZOS resize)",
+      "Time (ms)": 0.6093871001,
+      "Share (%)": 0.5392398369
+    },
+    {
+      "index": "cell_means_vectorized",
+      "Time (ms)": 4.3025188,
+      "Share (%)": 3.8072508194
+    },
+    {
+      "index": "segmented_image",
+      "Time (ms)": 2.6441111,
+      "Share (%)": 2.339744373
+    },
+    {
+      "index": "create_tile_set (rebuilt on every call)",
+      "Time (ms)": 0.0692753,
+      "Share (%)": 0.061300939
+    },
+    {
+      "index": "reconstruct_mosaic",
+      "Time (ms)": 0.2747608,
+      "Share (%)": 0.2431327624
+    },
+    {
+      "index": "MSE",
+      "Time (ms)": 1.0485796,
+      "Share (%)": 0.9278763736
+    },
+    {
+      "index": "SSIM",
+      "Time (ms)": 58.9073478,
+      "Share (%)": 52.1264539702
+    },
+    {
+      "index": "benchmark_grid_operations (loops vs. vectorized)",
+      "Time (ms)": 45.1525656667,
+      "Share (%)": 39.9550009254
+    }
+  ],
+  "bottlenecks": [
+    {
+      "index": 0,
+      "Bottleneck": "1. Loop benchmark inside create_mosaic",
+      "Where": "benchmark_grid_operations -> cell_means_loop",
+      "Share of the call (%)": 39.9550009254,
+      "Fix": "Remove it from the request path (keep it as a separate tool)"
+    },
+    {
+      "index": 1,
+      "Bottleneck": "2. Metrics inside create_mosaic",
+      "Where": "compare_images -> structural_similarity",
+      "Share of the call (%)": 53.0543303438,
+      "Fix": "Compute on demand: compute_similarity()"
+    },
+    {
+      "index": 2,
+      "Bottleneck": "3. Strided float32 cell reduction",
+      "Where": "cell_means_vectorized",
+      "Share of the call (%)": 3.8072508194,
+      "Fix": "Two contiguous integer reductions (uint16, uint32)"
+    },
+    {
+      "index": 3,
+      "Bottleneck": "4. Tile set and segmentation rebuilt",
+      "Where": "create_tile_set, segmented_image",
+      "Share of the call (%)": 2.4010453121,
+      "Fix": "Cache tiles and features; build the segmentation only when asked"
+    },
+    {
+      "index": 4,
+      "Bottleneck": "5. Resize of large photos",
+      "Where": "prepare_image",
+      "Share of the call (%)": 0.5392398369,
+      "Fix": "One crop + one resize; optional cheaper filter"
+    }
+  ],
+  "ladder": [
+    {
+      "Version": "V0  Lab 1 as submitted",
+      "Mean (ms)": 121.9556834,
+      "Std (ms)": 16.7745347701,
+      "Identical to Lab 1 mosaic": true,
+      "Speedup of this step": null,
+      "Cumulative speedup": 1.0
+    },
+    {
+      "Version": "V1  + loop benchmark removed from the request",
+      "Mean (ms)": 64.9941255001,
+      "Std (ms)": 2.2686504559,
+      "Identical to Lab 1 mosaic": true,
+      "Speedup of this step": 1.8764108673,
+      "Cumulative speedup": 1.8764108673
+    },
+    {
+      "Version": "V2  + metrics on demand",
+      "Mean (ms)": 7.85484535,
+      "Std (ms)": 0.3795690604,
+      "Identical to Lab 1 mosaic": true,
+      "Speedup of this step": 8.2743991261,
+      "Cumulative speedup": 15.5261724408
+    },
+    {
+      "Version": "V3  + integer cell reduction, broadcast segmentation",
+      "Mean (ms)": 2.6899846333,
+      "Std (ms)": 0.6945945803,
+      "Identical to Lab 1 mosaic": true,
+      "Speedup of this step": 2.9200335395,
+      "Cumulative speedup": 45.3369442668
+    },
+    {
+      "Version": "V4  + cached tiles, one vectorized match (MosaicBuilder.build)",
+      "Mean (ms)": 2.2867524667,
+      "Std (ms)": 0.221165081,
+      "Identical to Lab 1 mosaic": true,
+      "Speedup of this step": 1.1763339813,
+      "Cumulative speedup": 53.331388148
+    },
+    {
+      "Version": "V5  + lazy segmentation (MosaicBuilder.create_mosaic)",
+      "Mean (ms)": 1.1285063333,
+      "Std (ms)": 0.1106213847,
+      "Identical to Lab 1 mosaic": true,
+      "Speedup of this step": 2.0263532416,
+      "Cumulative speedup": 108.0682312529
+    }
+  ],
+  "comparison": [
+    {
+      "index": 0,
+      "Image size": "256x256",
+      "Grid size": "16x16",
+      "Cell (px)": 16,
+      "Mean (s)": 0.0498479322,
+      "Std (s)": 0.0041270845,
+      "Min (s)": 0.046702504,
+      "size": 256,
+      "grid": 16,
+      "cold": 0.001871674,
+      "lab8": 0.0006260835,
+      "lab8_std": 3.8561e-05,
+      "lab8_metrics": 0.0137617495,
+      "core_baseline": 0.0018678412,
+      "mosaic_only": 0.0003250284,
+      "Speedup": 79.6186603623,
+      "Speedup (+ metrics)": 3.6222089495,
+      "Speedup (core only)": 2.983373784
+    },
+    {
+      "index": 1,
+      "Image size": "256x256",
+      "Grid size": "32x32",
+      "Cell (px)": 8,
+      "Mean (s)": 0.0462592656,
+      "Std (s)": 0.0011815296,
+      "Min (s)": 0.044267206,
+      "size": 256,
+      "grid": 32,
+      "cold": 0.000990996,
+      "lab8": 0.0007780431,
+      "lab8_std": 3.66058e-05,
+      "lab8_metrics": 0.0135299617,
+      "core_baseline": 0.001970753,
+      "mosaic_only": 0.0004459042,
+      "Speedup": 59.4559139697,
+      "Speedup (+ metrics)": 3.4190241351,
+      "Speedup (core only)": 2.5329611118
+    },
+    {
+      "index": 2,
+      "Image size": "256x256",
+      "Grid size": "64x64",
+      "Cell (px)": 4,
+      "Mean (s)": 0.0542090066,
+      "Std (s)": 0.0062285331,
+      "Min (s)": 0.04530868,
+      "size": 256,
+      "grid": 64,
+      "cold": 0.001569881,
+      "lab8": 0.0015650393,
+      "lab8_std": 0.0002471298,
+      "lab8_metrics": 0.0150522785,
+      "core_baseline": 0.0026725923,
+      "mosaic_only": 0.000858168,
+      "Speedup": 34.6374723275,
+      "Speedup (+ metrics)": 3.6013821163,
+      "Speedup (core only)": 1.7076837898
+    },
+    {
+      "index": 3,
+      "Image size": "512x512",
+      "Grid size": "16x16",
+      "Cell (px)": 32,
+      "Mean (s)": 0.1195587352,
+      "Std (s)": 0.0020057833,
+      "Min (s)": 0.117267652,
+      "size": 512,
+      "grid": 16,
+      "cold": 0.002896028,
+      "lab8": 0.0022193265,
+      "lab8_std": 9.62942e-05,
+      "lab8_metrics": 0.0582800195,
+      "core_baseline": 0.0070946449,
+      "mosaic_only": 0.0008081866,
+      "Speedup": 53.8716304227,
+      "Speedup (+ metrics)": 2.0514532463,
+      "Speedup (core only)": 3.1967558656
+    },
+    {
+      "index": 4,
+      "Image size": "512x512",
+      "Grid size": "32x32",
+      "Cell (px)": 16,
+      "Mean (s)": 0.1195589962,
+      "Std (s)": 0.0012302815,
+      "Min (s)": 0.118462003,
+      "size": 512,
+      "grid": 32,
+      "cold": 0.002360536,
+      "lab8": 0.0022900363,
+      "lab8_std": 0.0001696048,
+      "lab8_metrics": 0.0607092567,
+      "core_baseline": 0.0080417972,
+      "mosaic_only": 0.0011063565,
+      "Speedup": 52.2083418238,
+      "Speedup (+ metrics)": 1.9693701208,
+      "Speedup (core only)": 3.5116462202
+    },
+    {
+      "index": 5,
+      "Image size": "512x512",
+      "Grid size": "64x64",
+      "Cell (px)": 8,
+      "Mean (s)": 0.1193312616,
+      "Std (s)": 0.0007752135,
+      "Min (s)": 0.118611569,
+      "size": 512,
+      "grid": 64,
+      "cold": 0.003287479,
+      "lab8": 0.0027307653,
+      "lab8_std": 9.03989e-05,
+      "lab8_metrics": 0.0612129947,
+      "core_baseline": 0.0083761761,
+      "mosaic_only": 0.001498983,
+      "Speedup": 43.6988342217,
+      "Speedup (+ metrics)": 1.9494432871,
+      "Speedup (core only)": 3.0673364708
+    },
+    {
+      "index": 6,
+      "Image size": "1024x1024",
+      "Grid size": "16x16",
+      "Cell (px)": 64,
+      "Mean (s)": 0.501554774,
+      "Std (s)": 0.044460831,
+      "Min (s)": 0.474473609,
+      "size": 1024,
+      "grid": 16,
+      "cold": 0.009718126,
+      "lab8": 0.0080622534,
+      "lab8_std": 0.0004212972,
+      "lab8_metrics": 0.3681205213,
+      "core_baseline": 0.0300145859,
+      "mosaic_only": 0.0030702346,
+      "Speedup": 62.2102470849,
+      "Speedup (+ metrics)": 1.3624743664,
+      "Speedup (core only)": 3.7228532192
+    },
+    {
+      "index": 7,
+      "Image size": "1024x1024",
+      "Grid size": "32x32",
+      "Cell (px)": 32,
+      "Mean (s)": 0.4791233446,
+      "Std (s)": 0.0071761272,
+      "Min (s)": 0.472879572,
+      "size": 1024,
+      "grid": 32,
+      "cold": 0.009391731,
+      "lab8": 0.0091921972,
+      "lab8_std": 0.0005804191,
+      "lab8_metrics": 0.3547057139,
+      "core_baseline": 0.0286431515,
+      "mosaic_only": 0.0034607888,
+      "Speedup": 52.1228313727,
+      "Speedup (+ metrics)": 1.3507629729,
+      "Speedup (core only)": 3.1160288315
+    },
+    {
+      "index": 8,
+      "Image size": "1024x1024",
+      "Grid size": "64x64",
+      "Cell (px)": 16,
+      "Mean (s)": 0.4950608606,
+      "Std (s)": 0.0279134306,
+      "Min (s)": 0.463819167,
+      "size": 1024,
+      "grid": 64,
+      "cold": 0.008814675,
+      "lab8": 0.0083481054,
+      "lab8_std": 0.0001528614,
+      "lab8_metrics": 0.3587619532,
+      "core_baseline": 0.0316390272,
+      "mosaic_only": 0.0043473819,
+      "Speedup": 59.3021816155,
+      "Speedup (+ metrics)": 1.3799146096,
+      "Speedup (core only)": 3.7899650053
+    }
+  ],
+  "required": [
+    {
+      "index": 0,
+      "Image size": "256\u00d7256",
+      "Grid size": "16\u00d716",
+      "Baseline time (s)": 0.0498479322,
+      "Lab 8 time (s)": 0.0006260835,
+      "Speedup": 79.6186603623
+    },
+    {
+      "index": 1,
+      "Image size": "512\u00d7512",
+      "Grid size": "32\u00d732",
+      "Baseline time (s)": 0.1195589962,
+      "Lab 8 time (s)": 0.0022900363,
+      "Speedup": 52.2083418238
+    },
+    {
+      "index": 2,
+      "Image size": "1024\u00d71024",
+      "Grid size": "64\u00d764",
+      "Baseline time (s)": 0.4950608606,
+      "Lab 8 time (s)": 0.0083481054,
+      "Speedup": 59.3021816155
+    }
+  ],
+  "target": {
+    "speedup": 52.20834182375141,
+    "speedup_with_metrics": 1.9693701207849452,
+    "speedup_core_only": 3.5116462201908,
+    "achieved": true
+  },
+  "correctness": {
+    "cases": 36,
+    "identical_mosaics": 36,
+    "identical_segmentations": 36,
+    "max_mse": 0.0,
+    "min_matching_tiles_pct": 100.0
+  },
+  "library": [
+    {
+      "index": 0,
+      "Feature": "mean",
+      "Search": "kdtree",
+      "Build (ms)": 2.346122,
+      "Match stage (ms)": 0.9825999998,
+      "MSE": 1219.4919433594,
+      "PSNR (dB)": 17.269014254,
+      "SSIM": 0.1171252029
+    },
+    {
+      "index": 1,
+      "Feature": "mean",
+      "Search": "brute",
+      "Build (ms)": 4.1294433667,
+      "Match stage (ms)": 2.6984880001,
+      "MSE": 1219.3856201172,
+      "PSNR (dB)": 17.2693929167,
+      "SSIM": 0.1171384952
+    },
+    {
+      "index": 2,
+      "Feature": "quadrant",
+      "Search": "kdtree",
+      "Build (ms)": 4.8450967333,
+      "Match stage (ms)": 2.621979,
+      "MSE": 1173.2445068359,
+      "PSNR (dB)": 17.4369183136,
+      "SSIM": 0.1282707709
+    },
+    {
+      "index": 3,
+      "Feature": "quadrant",
+      "Search": "brute",
+      "Build (ms)": 6.3697675333,
+      "Match stage (ms)": 2.841317,
+      "MSE": 1173.2445068359,
+      "PSNR (dB)": 17.4369183136,
+      "SSIM": 0.1282707709
+    }
+  ],
+  "kdtree_scaling": [
+    {
+      "index": 0,
+      "Features": 3,
+      "Tiles": 4,
+      "Tree build (ms)": 0.0106596,
+      "Tree query (ms)": 0.6688245,
+      "Brute force (ms)": 0.1928628,
+      "Same answer": true
+    },
+    {
+      "index": 1,
+      "Features": 3,
+      "Tiles": 64,
+      "Tree build (ms)": 0.0140384,
+      "Tree query (ms)": 1.1036617999,
+      "Brute force (ms)": 0.9393154,
+      "Same answer": true
+    },
+    {
+      "index": 2,
+      "Features": 3,
+      "Tiles": 216,
+      "Tree build (ms)": 0.0312782,
+      "Tree query (ms)": 1.4781616,
+      "Brute force (ms)": 3.0889367,
+      "Same answer": true
+    },
+    {
+      "index": 3,
+      "Features": 3,
+      "Tiles": 1000,
+      "Tree build (ms)": 0.151609,
+      "Tree query (ms)": 1.9103052,
+      "Brute force (ms)": 14.2022921,
+      "Same answer": true
+    },
+    {
+      "index": 4,
+      "Features": 3,
+      "Tiles": 5000,
+      "Tree build (ms)": 1.079325,
+      "Tree query (ms)": 2.5196051,
+      "Brute force (ms)": 139.0543063,
+      "Same answer": true
+    },
+    {
+      "index": 5,
+      "Features": 3,
+      "Tiles": 20000,
+      "Tree build (ms)": 5.2958586,
+      "Tree query (ms)": 3.3150363,
+      "Brute force (ms)": 645.7515961,
+      "Same answer": true
+    },
+    {
+      "index": 6,
+      "Features": 12,
+      "Tiles": 4,
+      "Tree build (ms)": 0.010842,
+      "Tree query (ms)": 0.6973526,
+      "Brute force (ms)": 0.2418571,
+      "Same answer": true
+    },
+    {
+      "index": 7,
+      "Features": 12,
+      "Tiles": 64,
+      "Tree build (ms)": 0.0149108,
+      "Tree query (ms)": 1.9610054,
+      "Brute force (ms)": 1.0349604,
+      "Same answer": true
+    },
+    {
+      "index": 8,
+      "Features": 12,
+      "Tiles": 216,
+      "Tree build (ms)": 0.0443282,
+      "Tree query (ms)": 6.5542518,
+      "Brute force (ms)": 2.9456686,
+      "Same answer": true
+    },
+    {
+      "index": 9,
+      "Features": 12,
+      "Tiles": 1000,
+      "Tree build (ms)": 0.2050385999,
+      "Tree query (ms)": 29.5156486,
+      "Brute force (ms)": 14.9434349,
+      "Same answer": true
+    },
+    {
+      "index": 10,
+      "Features": 12,
+      "Tiles": 5000,
+      "Tree build (ms)": 1.3057494,
+      "Tree query (ms)": 125.9621428,
+      "Brute force (ms)": 156.7476827,
+      "Same answer": true
+    },
+    {
+      "index": 11,
+      "Features": 12,
+      "Tiles": 20000,
+      "Tree build (ms)": 6.2802311999,
+      "Tree query (ms)": 244.7645969,
+      "Brute force (ms)": 655.8860749,
+      "Same answer": true
+    }
+  ],
+  "resampling": [
+    {
+      "index": 0,
+      "Filter": "lanczos",
+      "Resize (ms)": 7.49121095,
+      "MSE of the prepared image vs. lanczos": 0.0,
+      "Cells with the same tile (%)": 100.0
+    },
+    {
+      "index": 1,
+      "Filter": "bicubic",
+      "Resize (ms)": 6.49902085,
+      "MSE of the prepared image vs. lanczos": 2.2841377258,
+      "Cells with the same tile (%)": 99.609375
+    },
+    {
+      "index": 2,
+      "Filter": "bilinear",
+      "Resize (ms)": 6.0534481,
+      "MSE of the prepared image vs. lanczos": 14.4502019882,
+      "Cells with the same tile (%)": 99.4140625
+    },
+    {
+      "index": 3,
+      "Filter": "box",
+      "Resize (ms)": 3.8189893,
+      "MSE of the prepared image vs. lanczos": 16.1849937439,
+      "Cells with the same tile (%)": 98.828125
+    }
+  ],
+  "cache": [
+    {
+      "Scenario": "(a) reload tiles on every request",
+      "Time (ms)": 19.3733385
+    },
+    {
+      "Scenario": "(b) one manager: startup (once)",
+      "Time (ms)": 14.320217
+    },
+    {
+      "Scenario": "(b) first request (cold cache)",
+      "Time (ms)": 5.2410139999
+    },
+    {
+      "Scenario": "(b) next requests (warm cache)",
+      "Time (ms)": 1.5436495666
+    }
+  ],
+  "unit_tests": "41 passed in 0.96s"
+}

@@ -1,0 +1,196 @@
+Timer unit: 0.001 s
+Total time: 0.168802 s
+File: /home/claude/lab8/Lab8_Mosaic_Optimization/baseline_lab1/mosaic_pipeline.py
+Function: create_mosaic at line 30
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    43         1          0.0      0.0      0.0      processing_start = perf_counter()
+    46         1          2.5      2.5      1.5      prepared = prepare_image(image, (image_size, image_size))
+    47         1          0.0      0.0      0.0      tile_size = prepared.shape[0] // grid_size
+    50         1          4.4      4.4      2.6      cell_means = cell_means_vectorized(prepared, grid_size)
+    51         1          2.7      2.7      1.6      segmented = segmented_image(prepared, cell_means)
+    54         1          0.4      0.4      0.2      tiles = create_tile_set(tile_size, tile_set_name)
+    55         1          0.4      0.4      0.3      mosaic = reconstruct_mosaic(cell_means, tiles)
+    58         1         66.7     66.7     39.5      metric_values = compare_images(prepared, mosaic)
+    59         1         91.6     91.6     54.2      benchmark_results = benchmark_grid_operations(prepared)
+    60         1          0.0      0.0      0.0      processing_seconds = perf_counter() - processing_start
+    61         1          0.0      0.0      0.0      print("\nMetrics:")
+    62         1          0.0      0.0      0.0      print("MSE:", format(metric_values["MSE"], ".2f"))
+    63         1          0.0      0.0      0.0      print("SSIM:", format(metric_values["SSIM"], ".4f"))
+    64         1          0.0      0.0      0.0      print("Processing time:", format(processing_seconds, ".6f"), "seconds\n")
+    65         1          0.0      0.0      0.0      print_benchmark_results(benchmark_results)
+    66         1          0.0      0.0      0.0      return prepared, segmented, mosaic
+Total time: 0.0915263 s
+File: /home/claude/lab8/Lab8_Mosaic_Optimization/baseline_lab1/benchmarking.py
+Function: benchmark_grid_operations at line 24
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    31         1          0.0      0.0      0.0      results = []
+    32         4          0.0      0.0      0.0      for grid_size in grid_sizes:
+    34         3          0.0      0.0      0.0          vector_start = perf_counter()
+    35         3         15.3      5.1     16.7          cell_means_vectorized(image, grid_size)
+    36         3          0.0      0.0      0.0          vectorized_seconds = perf_counter() - vector_start
+    39         3          0.0      0.0      0.0          loop_start = perf_counter()
+    40         3         76.2     25.4     83.3          cell_means_loop(image, grid_size)
+    41         3          0.0      0.0      0.0          loop_seconds = perf_counter() - loop_start
+    44         6          0.0      0.0      0.0          results.append({
+    45         3          0.0      0.0      0.0              "grid_size": grid_size,
+    46         3          0.0      0.0      0.0              "vectorized_seconds": vectorized_seconds,
+    47         3          0.0      0.0      0.0              "loop_seconds": loop_seconds,
+    48         3          0.0      0.0      0.0              "speedup": loop_seconds / vectorized_seconds if vectorized_seconds else float("inf"),
+    50         1          0.0      0.0      0.0      return results
+Total time: 0.073783 s
+File: /home/claude/lab8/Lab8_Mosaic_Optimization/baseline_lab1/grid_analysis.py
+Function: cell_means_loop at line 63
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    74         3          0.0      0.0      0.0      validate_grid_size(image, grid_size)
+    75         3          0.0      0.0      0.0      height, width = image.shape[:2]
+    76         3          0.0      0.0      0.0      cell_height = height // grid_size
+    77         3          0.0      0.0      0.0      cell_width = width // grid_size
+    78         3          0.0      0.0      0.0      means = np.empty((grid_size, grid_size, 3), dtype = np.float32)
+    81       115          0.0      0.0      0.0      for row in range(grid_size):
+    84      5488          1.7      0.0      2.3          for column in range(grid_size):
+    85      5376          1.4      0.0      1.9              top = row * cell_height
+    86      5376          1.4      0.0      2.0              left = column * cell_width
+    87      5376          2.9      0.0      3.9              cell = image[top : top + cell_height, left : left + cell_width]
+    88      5376         66.3      0.0     89.8              means[row, column] = cell.mean(axis=(0, 1))
+    90         3          0.0      0.0      0.0      return means
+Timer unit: 0.001 s
+Total time: 0.0674391 s
+File: /home/claude/lab8/Lab8_Mosaic_Optimization/baseline_lab1/metrics.py
+Function: compare_images at line 56
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    68         1          0.0      0.0      0.0      return {
+    69         1          3.0      3.0      4.4          "MSE": mean_squared_error(original, reconstructed),
+    70         1         64.4     64.4     95.6          "SSIM": structural_similarity_index(original, reconstructed),
+Total time: 0.128553 s
+File: /usr/local/lib/python3.13/site-packages/skimage/metrics/_structural_similarity.py
+Function: structural_similarity at line 15
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   118         4          0.0      0.0      0.0      check_shape_equality(im1, im2)
+   119         4          0.0      0.0      0.0      float_type = _supported_float_type(im1.dtype)
+   121         4          0.0      0.0      0.0      if channel_axis is not None:
+   123         2          0.0      0.0      0.0          args = dict(
+   124         1          0.0      0.0      0.0              win_size=win_size,
+   125         1          0.0      0.0      0.0              gradient=gradient,
+   126         1          0.0      0.0      0.0              data_range=data_range,
+   127         1          0.0      0.0      0.0              channel_axis=None,
+   128         1          0.0      0.0      0.0              gaussian_weights=gaussian_weights,
+   129         1          0.0      0.0      0.0              full=full,
+   131         1          0.0      0.0      0.0          args.update(kwargs)
+   132         1          0.0      0.0      0.0          nch = im1.shape[channel_axis]
+   133         1          0.0      0.0      0.0          mssim = np.empty(nch, dtype=float_type)
+   135         1          0.0      0.0      0.0          if gradient:
+   137         1          0.0      0.0      0.0          if full:
+   139         1          0.0      0.0      0.0          channel_axis = channel_axis % im1.ndim
+   140         1          0.0      0.0      0.0          _at = functools.partial(utils.slice_at_axis, axis=channel_axis)
+   141         4          0.0      0.0      0.0          for ch in range(nch):
+   142         3         64.3     21.4     50.0              ch_result = structural_similarity(im1[_at(ch)], im2[_at(ch)], **args)
+   143         3          0.0      0.0      0.0              if gradient and full:
+   145         3          0.0      0.0      0.0              elif gradient:
+   147         3          0.0      0.0      0.0              elif full:
+   150         3          0.0      0.0      0.0                  mssim[ch] = ch_result
+   151         1          0.0      0.0      0.0          mssim = mssim.mean()
+   152         1          0.0      0.0      0.0          if gradient and full:
+   154         1          0.0      0.0      0.0          elif gradient:
+   156         1          0.0      0.0      0.0          elif full:
+   159         1          0.0      0.0      0.0              return mssim
+   161         3          0.0      0.0      0.0      K1 = kwargs.pop('K1', 0.01)
+   162         3          0.0      0.0      0.0      K2 = kwargs.pop('K2', 0.03)
+   163         3          0.0      0.0      0.0      sigma = kwargs.pop('sigma', 1.5)
+   164         3          0.0      0.0      0.0      if K1 < 0:
+   166         3          0.0      0.0      0.0      if K2 < 0:
+   168         3          0.0      0.0      0.0      if sigma < 0:
+   170         3          0.0      0.0      0.0      use_sample_covariance = kwargs.pop('use_sample_covariance', True)
+   172         3          0.0      0.0      0.0      if gaussian_weights:
+   177         3          0.0      0.0      0.0      if win_size is None:
+   178         3          0.0      0.0      0.0          if gaussian_weights:
+   183         3          0.0      0.0      0.0              win_size = 7  # backwards compatibility
+   185         3          0.1      0.0      0.1      if np.any((np.asarray(im1.shape) - win_size) < 0):
+   197         3          0.0      0.0      0.0      if not (win_size % 2 == 1):
+   200         3          0.0      0.0      0.0      if data_range is None:
+   225         3          0.0      0.0      0.0      ndim = im1.ndim
+   227         3          0.0      0.0      0.0      if gaussian_weights:
+   231         3          0.0      0.0      0.0          filter_func = uniform_filter
+   232         3          0.0      0.0      0.0          filter_args = {'size': win_size}
+   235         3          0.6      0.2      0.5      im1 = im1.astype(float_type, copy=False)
+   236         3          0.6      0.2      0.4      im2 = im2.astype(float_type, copy=False)
+   238         3          0.0      0.0      0.0      NP = win_size**ndim
+   241         3          0.0      0.0      0.0      if use_sample_covariance:
+   242         3          0.0      0.0      0.0          cov_norm = NP / (NP - 1)  # sample covariance
+   247         3          7.9      2.6      6.1      ux = filter_func(im1, **filter_args)
+   248         3          8.5      2.8      6.6      uy = filter_func(im2, **filter_args)
+   251         3          9.8      3.3      7.6      uxx = filter_func(im1 * im1, **filter_args)
+   252         3          9.7      3.2      7.6      uyy = filter_func(im2 * im2, **filter_args)
+   253         3         10.0      3.3      7.8      uxy = filter_func(im1 * im2, **filter_args)
+   254         3          2.1      0.7      1.6      vx = cov_norm * (uxx - ux * ux)
+   255         3          2.4      0.8      1.9      vy = cov_norm * (uyy - uy * uy)
+   256         3          2.2      0.7      1.7      vxy = cov_norm * (uxy - ux * uy)
+   258         3          0.0      0.0      0.0      R = data_range
+   259         3          0.0      0.0      0.0      C1 = (K1 * R) ** 2
+   260         3          0.0      0.0      0.0      C2 = (K2 * R) ** 2
+   262         3          0.0      0.0      0.0      A1, A2, B1, B2 = (
+   263         3          1.7      0.6      1.3          2 * ux * uy + C1,
+   264         3          1.2      0.4      0.9          2 * vxy + C2,
+   265         3          2.3      0.8      1.8          ux**2 + uy**2 + C1,
+   266         3          1.1      0.4      0.9          vx + vy + C2,
+   268         3          1.1      0.4      0.8      D = B1 * B2
+   269         3          2.1      0.7      1.6      S = (A1 * A2) / D
+   272         3          0.0      0.0      0.0      pad = (win_size - 1) // 2
+   275         3          0.7      0.2      0.6      mssim = crop(S, pad).mean(dtype=np.float64)
+   277         3          0.0      0.0      0.0      if gradient:
+   289         3          0.0      0.0      0.0          if full:
+   292         3          0.0      0.0      0.0              return mssim
+Timer unit: 0.001 s
+Total time: 0.00484132 s
+File: /home/claude/lab8/Lab8_Mosaic_Optimization/baseline_lab1/grid_analysis.py
+Function: cell_means_vectorized at line 37
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    49         1          0.0      0.0      0.1      validate_grid_size(image, grid_size)
+    50         1          0.0      0.0      0.0      height, width = image.shape[:2]
+    51         1          0.0      0.0      0.0      cell_height = height // grid_size
+    52         1          0.0      0.0      0.0      cell_width = width // grid_size
+    55         1          0.0      0.0      0.1      cells = image.reshape(grid_size, cell_height, grid_size, cell_width, 3)
+    56         1          0.0      0.0      0.0      cells = cells.transpose(0, 2, 1, 3, 4)
+    59         1          4.8      4.8     99.7      return cells.mean(axis=(2, 3), dtype = np.float32)
+Total time: 0.00286493 s
+File: /home/claude/lab8/Lab8_Mosaic_Optimization/baseline_lab1/grid_analysis.py
+Function: segmented_image at line 94
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   105         1          0.0      0.0      0.1      height, width = image.shape[:2]
+   106         1          0.0      0.0      0.0      grid_height, grid_width = cell_means.shape[:2]
+   107         1          0.0      0.0      0.0      cell_height = height // grid_height
+   108         1          0.0      0.0      0.0      cell_width = width // grid_width
+   111         1          0.9      0.9     32.2      segmented = np.repeat(np.repeat(cell_means, cell_height, axis=0), cell_width, axis=1)
+   112         1          1.9      1.9     67.6      return np.clip(segmented, 0, 255).astype(np.uint8)
+Total time: 0.000478566 s
+File: /home/claude/lab8/Lab8_Mosaic_Optimization/baseline_lab1/mosaic_mapping.py
+Function: reconstruct_mosaic at line 43
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    54         1          0.2      0.2     49.5      tile_indices = classify_cells(cell_means, tiles)
+    55         1          0.1      0.1     12.7      selected_tiles = tiles[tile_indices]
+    56         1          0.0      0.0      0.3      grid_height, grid_width, tile_height, tile_width, channels = selected_tiles.shape
+    59         1          0.0      0.0      0.4      mosaic = selected_tiles.transpose(0, 2, 1, 3, 4)
+    60         1          0.2      0.2     37.1      return mosaic.reshape(grid_height * tile_height, grid_width * tile_width, channels)
+Total time: 0.000315547 s
+File: /home/claude/lab8/Lab8_Mosaic_Optimization/baseline_lab1/tile_library.py
+Function: create_tile_set at line 21
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    32         1          0.1      0.1     28.1      coordinates = np.linspace(0, 1, tile_size, dtype = np.float32)
+    33         1          0.1      0.1     32.7      x, y = np.meshgrid(coordinates, coordinates)
+    34         1          0.0      0.0      0.1      tiles = []
+    37         1          0.0      0.0      0.2      if tile_set_name == "Solid":
+    41         1          0.0      0.0      0.1      elif tile_set_name == "Diagonal":
+    42         1          0.0      0.0      3.8          patterns = [x, y, np.abs(x - y), (x + y) / 2]
+    54         1          0.0      0.0      1.9      colors = np.array([[220, 70, 55], [45, 125, 210], [45, 165, 105], [235, 180, 45]], dtype = np.float32)
+    57         5          0.0      0.0      1.4      for pattern, color in zip(patterns, colors):
+    58         4          0.0      0.0      8.2          tile = pattern[..., None] * color
+    59         4          0.0      0.0     14.9          tiles.append(np.clip(tile, 0, 255).astype(np.uint8))
+    61         1          0.0      0.0      8.7      return np.stack(tiles)
